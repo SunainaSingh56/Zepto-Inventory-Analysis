@@ -1,434 +1,933 @@
-# 🛒 Zepto Inventory Analysis | SQL Project
+# 🛒 Zepto Inventory Analysis | SQL + Python + AI-Assisted Data Quality
 
-**Turning 3,700+ raw inventory rows into pricing, stock, and revenue decisions — using nothing but SQL.**
+An end-to-end **data analytics project** focused on cleaning, validating, and analyzing Zepto inventory data using **MySQL, Python, Pandas, and Gemini AI**.
 
-Zepto is one of India's fastest-growing quick-commerce platforms, delivering groceries in minutes. Behind every "10-min delivery" promise is an inventory system juggling thousands of SKUs, fluctuating stock, and aggressive discounting. This project digs into that inventory data to answer questions a **category manager or business analyst** would actually ask: *What's driving revenue? What's sitting out of stock? Where are we discounting too much — or too little?*
+The project follows a practical analytics workflow:
 
----
+**Raw Data → Data Cleaning → Deduplication → Data Quality Validation → SQL Analysis → Business Insights**
 
-## 📑 Table of Contents
-- [Tools Used](#-tools-used)
-- [Dataset](#-dataset)
-- [Project Structure](#-project-structure)
-- [Schema Design](#-schema-design)
-- [Project Workflow](#-project-workflow)
-- [Data Cleaning & Deduplication](#-data-cleaning--deduplication)
-- [Analysis Sections](#-analysis-sections)
-- [Key Insights](#-key-insights)
-- [Challenges Faced](#-challenges-faced)
-- [How to Run This Project](#-how-to-run-this-project)
-- [What's Next](#-whats-next)
-- [Let's Connect](#-lets-connect)
+> **Key principle:** Before using data for business decisions, first make sure the data can be trusted.
 
 ---
 
-## 🛠 Tools Used
+## 📌 Table of Contents
 
-| Tool | Purpose |
-|---|---|
-| **MySQL 8.0** | Data cleaning, schema design, querying, business logic |
-| **VS Code + SQLTools** | Query development & execution environment |
+* [🎯 Project Objective](#-project-objective)
+* [🛠️ Tools Used](#️-tools-used)
+* [📊 Dataset](#-dataset)
+* [📁 Project Structure](#-project-structure)
+* [🔄 Analysis Workflow](#-analysis-workflow)
+* [📋 Business Questions](#-business-questions)
+* [🧹 Data Cleaning & Deduplication](#-data-cleaning--deduplication)
+* [🐍 Python Data Quality Validation](#-python-data-quality-validation)
+* [🤖 AI-Assisted Data Quality Analysis](#-ai-assisted-data-quality-analysis)
+* [🔎 Interactive SQL Analysis](#-interactive-sql-analysis)
+* [💡 Key Insights](#-key-insights)
+* [⚠️ Challenges](#️-challenges)
+* [▶️ How to Run](#️-how-to-run)
+* [🚀 What I Would Do Next](#-what-i-would-do-next)
+* [📂 Project Files](#-project-files)
 
 ---
 
-## 📦 Dataset
+## 🎯 Project Objective
 
-| Detail | Value |
-|---|---|
-| Source | [Kaggle — Zepto Inventory Dataset](https://www.kaggle.com/datasets/palvinder2006/zepto-inventory-dataset) |
-| Raw rows | 3,732 |
-| After removing invalid entry | 3,731 |
-| After deduplication | 1,675 |
-| Columns | 9 |
-| Key fields | `name`, `category`, `mrp`, `discountPercent`, `discountedSellingPrice`, `availableQuantity`, `weightInGms`, `outOfStock`, `quantity` |
+The objective was to analyze Zepto inventory data while treating **data quality as the first step of the analysis**.
+
+The project focuses on:
+
+* Identifying and removing invalid records
+* Investigating duplicate product/category records
+* Validating the cleaned dataset using Python
+* Checking pricing consistency
+* Analyzing revenue, discounts, stock availability, and inventory
+* Using SQL techniques such as **CTEs, window functions, CASE statements, and JOINs**
+* Using Gemini AI to interpret validated data-quality findings
+
+---
+
+## 🛠️ Tools Used
+
+| Tool                  | Purpose                                                    |
+| --------------------- | ---------------------------------------------------------- |
+| **MySQL 8.0**         | Data cleaning, SQL analysis, JOINs, CTEs, window functions |
+| **Python**            | Data-quality validation                                    |
+| **Pandas**            | Data inspection and validation                             |
+| **Jupyter Notebook**  | Python-based analysis                                      |
+| **Google Gemini API** | AI-assisted interpretation of validated findings           |
+| **VS Code**           | Development environment                                    |
+
+---
+
+## 📊 Dataset
+
+**Source:** Kaggle — Zepto Inventory Dataset
+
+### Dataset Transformation
+
+| Stage                                |      Rows |
+| ------------------------------------ | --------: |
+| Raw dataset                          | **3,732** |
+| After removing invalid `MRP = 0` row | **3,731** |
+| After deduplication                  | **1,675** |
+| Final columns                        |     **9** |
+
+### Final Dataset Schema
+
+| Column                   | Description                  |
+| ------------------------ | ---------------------------- |
+| `sku_id`                 | Unique SKU identifier        |
+| `category`               | Product category             |
+| `name`                   | Product name                 |
+| `mrp`                    | Maximum Retail Price         |
+| `discountPercent`        | Discount percentage          |
+| `availableQuantity`      | Available inventory quantity |
+| `discountedSellingPrice` | Selling price after discount |
+| `weightInGms`            | Product weight               |
+| `outOfStock`             | Stock availability flag      |
+
+> **Note:** Prices in the source data were stored in **paise** and converted to **rupees** during preprocessing.
 
 ---
 
 ## 📁 Project Structure
 
-```
-zepto-inventory-analysis/
+```text
+ZEPTO SQL PROJECT/
 │
-├── zepto_db_setup.sql            # Table creation, CSV import, category reference data
-├── zepto_analysis.sql            # 4 sections · 20 numbered queries (Q1–Q20)
-├── sql_schema_overview.png       # Table schema & JOIN relationship
-├── sql_dedup_result.png          # Before/after row count (3,731 → 1,675)
-├── sql_outofstock_highmrp.png    # High-MRP out-of-stock products
-├── sql_revenue_by_category.png   # Revenue ranking by category
-├── sql_avg_discount_category.png # Average discount per category
-├── sql_join_query_output.png     # Section 4 JOIN query result
+├── data/
+│   └── zepto_clean.csv
+│
+├── python/
+│   └── zepto_data_quality.ipynb
+│
+├── sql/
+│   ├── zepto_analysis.sql
+│   └── zepto_db_setup.sql
+│
+├── docs/
+│   └── ai_quality_assessment.md
+│
+├── screenshots/
+│   ├── sql_avg_discount_category.png
+│   ├── sql_dedup_result.png
+│   ├── sql_join_query_output.png
+│   ├── sql_outofstock_highmrp.png
+│   ├── sql_revenue_by_category.png
+│   └── sql_schema_overview.png
+│
 └── README.md
 ```
 
-> **Two-file approach:** Setup is completely separated from analysis — making the project easy to review, reproduce, and extend.
+---
+
+## 🔄 Analysis Workflow
+
+```text
+Raw Kaggle Dataset
+        ↓
+Initial Data Exploration
+        ↓
+Remove Invalid MRP = 0
+        ↓
+Investigate Duplicate Product/Category Records
+        ↓
+Deduplicate Dataset
+        ↓
+Export Clean Dataset
+        ↓
+Python Data Quality Validation
+        ↓
+Pricing Consistency Investigation
+        ↓
+AI-Assisted Interpretation
+        ↓
+SQL Business Analysis
+        ↓
+Business Insights
+```
 
 ---
 
-## 🗂 Schema Design
+## 📋 Business Questions
 
-```sql
--- Main inventory table
-CREATE TABLE zepto (
-    sku_id                 SERIAL PRIMARY KEY,
-    Category               VARCHAR(120),
-    name                   VARCHAR(150) NOT NULL,
-    mrp                    NUMERIC(8,2),
-    discountPercent        NUMERIC(5,2),
-    availableQuantity      INTEGER,
-    discountedSellingPrice NUMERIC(8,2),
-    weightInGms            INTEGER,
-    outOfStock             VARCHAR(6),
-    quantity               INTEGER
-);
+The SQL analysis was designed around practical inventory and commercial questions:
 
--- Category reference table (enables JOIN-based analysis)
-CREATE TABLE category_info (
-    category_id        SERIAL PRIMARY KEY,
-    category           VARCHAR(120) UNIQUE,
-    warehouse_zone     VARCHAR(10),
-    category_manager   VARCHAR(60),
-    reorder_threshold  INTEGER
-);
-```
-
-> `zepto_clean` is derived from `zepto` after cleaning and deduplication. `category_info` is a reference/dimension table linking inventory with warehouse and operational metadata — reflecting real-world database design where business context lives in a separate lookup table.
-
-![Schema Overview](sql_schema_overview.png)
+1. Which products have the highest discounts?
+2. Which high-MRP products are out of stock?
+3. Which categories have the highest estimated revenue?
+4. Which categories offer the highest average discounts?
+5. Which products represent the strongest deals?
+6. How does inventory vary by category?
+7. Which categories require attention based on stock thresholds?
+8. How can category-level information be combined with inventory data?
+9. Which categories perform strongly within each warehouse zone?
+10. What patterns can be identified from the cleaned dataset?
 
 ---
 
-## 🔄 Project Workflow
+# 🧹 Data Cleaning & Deduplication
 
-```
-🔍 Explore → 🧹 Clean → 🏗 Deduplicate → 💡 Analyze → 📊 Insights
+## 1️⃣ Removing Invalid MRP
+
+The raw dataset contained one record where:
+
+```text
+MRP = 0
 ```
 
-| Phase | What Happened |
-|---|---|
-| **Exploration** | Row counts, null audits, category listing, stock-status breakdown, duplicate detection |
-| **Cleaning** | Deleted invalid pricing row, converted paise → rupees, created `zepto_clean` |
-| **Business Analysis** | Q1–Q16: aggregations, subqueries, CTEs, window functions on `zepto_clean` |
-| **JOIN Analysis** | Q17–Q20: INNER JOIN, LEFT JOIN, CASE WHEN, CTE + window function |
+This record was removed because a zero MRP is not meaningful for the pricing analysis.
 
 ---
 
-## 🧹 Data Cleaning & Deduplication
+## 2️⃣ Investigating Duplicate Product Records
 
-### Issues Found & Fixed
+During the initial analysis, some product names appeared under multiple category tags.
 
-| Issue | Fix |
-|---|---|
-| 1 row with `mrp = 0` | Deleted |
-| Prices stored in paise (e.g. 2500 = ₹25) | Divided by 100 |
-| `outOfStock` rejected as boolean | Imported as `VARCHAR(6)`, filtered with `= 'TRUE'` |
-| 1,187 products duplicated across category tags | Deduplicated with `ROW_NUMBER()` into `zepto_clean` |
+A diagnostic query was used to identify these cases:
 
 ```sql
--- Convert paise → rupees
-UPDATE zepto
-SET mrp = mrp / 100.0,
-    discountedSellingPrice = discountedSellingPrice / 100.0;
-
--- Create clean deduplicated table for all analysis
-CREATE TABLE zepto_clean AS
-SELECT sku_id, category, name, mrp,
-       discountPercent, availableQuantity,
-       discountedSellingPrice, weightInGms, outOfStock
-FROM (
-    SELECT *,
-           ROW_NUMBER() OVER (
-               PARTITION BY name, category
-               ORDER BY sku_id
-           ) AS rn
-    FROM zepto
-) ranked
-WHERE rn = 1;
-```
-
-### How the Duplicate Bug Was Caught
-
-Early revenue queries returned **identical totals** across unrelated categories — Packaged Food, Ice Cream & Desserts, and Chocolates & Candies all showed the same figure. Rather than accepting it, I wrote a diagnostic query:
-
-```sql
-SELECT name, COUNT(DISTINCT category) AS category_count
-FROM zepto
+SELECT
+    name,
+    COUNT(DISTINCT category) AS category_count
+FROM zepto1
 GROUP BY name
 HAVING category_count > 1
 ORDER BY category_count DESC;
 ```
 
-This revealed **1,187 products duplicated across multiple category labels** — adding 2,057 excess rows. After deduplication: **3,731 → 1,675 rows**. All revenue figures were recalculated from the clean table.
+The investigation identified **1,187 products appearing across multiple category tags**.
 
-> 💡 This is the kind of data quality bug that goes unnoticed when analysts trust output without questioning it. Catching it required understanding *why* results looked wrong — not just that they did.
+This was important because the initial category-level revenue results contained suspiciously similar totals across unrelated categories.
 
-![Deduplication Result](sql_dedup_result.png)
-
----
-
-## 💡 Analysis Sections
-
-`zepto_analysis.sql` contains **4 sections**. Sections 1–2 run on raw `zepto`. Sections 3–4 run on `zepto_clean`.
+Instead of immediately using those results, the data was investigated first.
 
 ---
 
-### 📌 Section 1 — Data Exploration (6 Queries)
+## 3️⃣ Deduplication
 
-Initial scan before any analysis. Covers row counts, null checks, category listing, stock breakdown, and duplicate detection.
+After investigating the duplicate records, the dataset was deduplicated before performing the final business analysis.
 
-```sql
--- In-stock vs out-of-stock breakdown
-SELECT outOfStock, COUNT(sku_id) AS product_count
-FROM zepto GROUP BY outOfStock;
+### Result
 
--- Products with multiple SKUs — exposed the duplication problem
-SELECT name, COUNT(sku_id) AS sku_count
-FROM zepto GROUP BY name
-HAVING COUNT(sku_id) > 1 ORDER BY sku_count DESC;
+```text
+3,731 records
+      ↓
+1,675 records
 ```
 
----
+![Deduplication Result](screenshots/sql_dedup_result.png)
 
-### 📌 Section 2 — Data Cleaning & Deduplication
-
-Covers `DELETE`, `UPDATE`, CTE-based duplicate identification, and `CREATE TABLE zepto_clean`. Detailed above in the [Data Cleaning](#-data-cleaning--deduplication) section.
+> **Key takeaway:** Data validation changed the dataset before business insights were generated. This helped prevent potentially misleading conclusions from duplicated records.
 
 ---
 
-### 📌 Section 3 — Business Insights (Q1–Q16)
+# 🐍 Python Data Quality Validation
 
-16 queries on `zepto_clean`, ordered by increasing complexity.
+After SQL cleaning, the final dataset was validated independently using **Python + Pandas**.
+
+Notebook:
+
+`python/zepto_data_quality.ipynb`
+
+### Validation Results
+
+| Validation               | Result |
+| ------------------------ | -----: |
+| Missing values           |  **0** |
+| Duplicate rows           |  **0** |
+| Duplicate SKU IDs        |  **0** |
+| Invalid MRP values       |  **0** |
+| Discount outside 0–100%  |  **0** |
+| Negative stock values    |  **0** |
+| Invalid selling prices   |  **0** |
+| Negative product weights |  **0** |
+
+### Data Types
+
+The final dataset contains:
+
+* Integer columns for IDs and quantities
+* Float columns for prices and discounts
+* Object columns for category/product information
+* Boolean values for stock availability
+
+---
+
+## 💰 Pricing Consistency Check
+
+The expected discounted price was calculated using:
+
+```python
+expected_price = mrp * (1 - discountPercent / 100)
+```
+
+The initial comparison identified:
+
+```text
+873 records
+```
+
+where the stored selling price did not match the simple formula within ₹0.01.
+
+A second validation using a rounded discount calculation found:
+
+```text
+1,266 records reconciled
+```
+
+The remaining:
+
+```text
+409 records
+```
+
+did not reconcile under either calculation and therefore require confirmation of the actual pricing/business rule used by the source system.
+
+### Important distinction
+
+These 409 records are **not automatically treated as pricing errors**.
+
+The analysis identifies them as **records requiring business-rule confirmation**.
+
+---
+
+# 🤖 AI-Assisted Data Quality Analysis
+
+Gemini was used as a **supporting interpretation layer**, not as the source of truth.
+
+### Workflow
+
+```text
+Python Validation
+      ↓
+Validated Findings
+      ↓
+Gemini Interpretation
+      ↓
+Classification + Business Impact
+      ↓
+Recommended Validation Rules
+```
+
+Python was responsible for deterministic checks such as:
+
+* Missing values
+* Duplicate records
+* Duplicate SKU IDs
+* Invalid ranges
+* Pricing discrepancies
+
+Gemini was then used to:
+
+* Interpret validated findings
+* Classify observations
+* Explain potential business impact
+* Suggest validation rules
+* Highlight areas requiring business-rule confirmation
+
+> **Python remained the source of truth. AI was used to interpret findings rather than replace analytical logic.**
+
+📄 [View AI Quality Assessment](docs/ai_quality_assessment.md)
+
+---
+
+# 🔎 Interactive SQL Analysis
+
+All detailed SQL queries are available in:
+
+`sql/zepto_analysis.sql`
+
+The sections below provide selected queries using GitHub's expandable `<details>` functionality.
+
+---
+
+## 1️⃣ Data Exploration
 
 <details>
-<summary><b>Q1 · Top 10 most-discounted products</b></summary>
+<summary><b>Q1 — Top 10 Most-Discounted Products</b></summary>
+
+### Query
 
 ```sql
-SELECT DISTINCT name, mrp, discountPercent
+SELECT DISTINCT
+    name,
+    mrp,
+    discountPercent
 FROM zepto_clean
-ORDER BY discountPercent DESC LIMIT 10;
+ORDER BY discountPercent DESC
+LIMIT 10;
 ```
-**Finding:** Biscuit/wafer brands (Dukes Waffy) and ready-to-cook kits dominate — all at 50–51% off.
+
+### Purpose
+
+Identify products receiving the highest percentage discounts.
+
 </details>
 
+---
+
 <details>
-<summary><b>Q2 · High-value products currently out of stock</b></summary>
+<summary><b>Q2 — High-MRP Products That Are Out of Stock</b></summary>
+
+### Query
 
 ```sql
-SELECT DISTINCT name, mrp
+SELECT DISTINCT
+    name,
+    mrp
 FROM zepto_clean
-WHERE outOfStock = 'TRUE' AND mrp > 300
+WHERE outOfStock = 'TRUE'
+  AND mrp > 300
 ORDER BY mrp DESC;
 ```
-**Finding:** Patanjali Cow's Ghee (₹565), MamyPoko Pants (₹399), Aashirvaad Atta (₹315) — daily essentials — all out of stock.
+
+### Purpose
+
+Identify higher-priced products that are currently marked as out of stock.
+
+![High MRP Out of Stock](screenshots/sql_outofstock_highmrp.png)
+
 </details>
 
-![Out of Stock High MRP](sql_outofstock_highmrp.png)
+---
+
+## 2️⃣ Category-Level Analysis
 
 <details>
-<summary><b>Q3 · Estimated revenue per category</b></summary>
+<summary><b>Q3 — Estimated Revenue by Category</b></summary>
+
+### Query
 
 ```sql
-SELECT category,
-       ROUND(SUM(discountedSellingPrice * availableQuantity), 2) AS estimated_revenue
+SELECT
+    category,
+    ROUND(
+        SUM(discountedSellingPrice * availableQuantity),
+        2
+    ) AS estimated_revenue
 FROM zepto_clean
-GROUP BY category ORDER BY estimated_revenue DESC;
+GROUP BY category
+ORDER BY estimated_revenue DESC;
 ```
-**Finding:** Cooking Essentials leads at ₹2,83,472 — nearly **27x** the revenue of Fruits & Vegetables (₹10,378).
+
+### Purpose
+
+Estimate the inventory value represented by each category using:
+
+```text
+Discounted Selling Price × Available Quantity
+```
+
+![Revenue by Category](screenshots/sql_revenue_by_category.png)
+
 </details>
 
-![Revenue by Category](sql_revenue_by_category.png)
+---
 
 <details>
-<summary><b>Q5 · Top 5 categories by average discount</b></summary>
+<summary><b>Q4 — Average Discount by Category</b></summary>
+
+### Query
 
 ```sql
-SELECT category, ROUND(AVG(discountPercent), 2) AS avg_discount
+SELECT
+    category,
+    ROUND(AVG(discountPercent), 2) AS avg_discount
 FROM zepto_clean
-GROUP BY category ORDER BY avg_discount DESC LIMIT 5;
+GROUP BY category
+ORDER BY avg_discount DESC
+LIMIT 5;
 ```
-**Finding:** Fruits & Vegetables (15.93%) and Meats, Fish & Eggs (9.91%) lead — perishables discounted hardest before spoilage.
+
+### Finding
+
+**Fruits & Vegetables** recorded an average discount of approximately **15.93%** in the analyzed dataset.
+
+![Average Discount by Category](screenshots/sql_avg_discount_category.png)
+
 </details>
 
-![Average Discount by Category](sql_avg_discount_category.png)
+---
+
+## 3️⃣ Advanced SQL Analysis
 
 <details>
-<summary><b>Q10 · Top 3 best-deal products per category (DENSE_RANK)</b></summary>
+<summary><b>Q5 — Top 3 Discounted Products per Category</b></summary>
+
+### Query
 
 ```sql
 WITH category_ranked AS (
-    SELECT name, category, discountPercent,
-           DENSE_RANK() OVER (
-               PARTITION BY category ORDER BY discountPercent DESC
-           ) AS rnk
+    SELECT
+        name,
+        category,
+        discountPercent,
+        DENSE_RANK() OVER (
+            PARTITION BY category
+            ORDER BY discountPercent DESC
+        ) AS rnk
     FROM zepto_clean
 )
-SELECT name, category, discountPercent, rnk
-FROM category_ranked WHERE rnk <= 3
+SELECT
+    name,
+    category,
+    discountPercent,
+    rnk
+FROM category_ranked
+WHERE rnk <= 3
 ORDER BY category, rnk;
 ```
-**Finding:** Powers a "Best Deals per Category" display — real feature logic, not just a query exercise.
+
+### SQL Concepts Used
+
+* CTE
+* `DENSE_RANK()`
+* `PARTITION BY`
+* Category-level ranking
+
 </details>
 
+---
+
 <details>
-<summary><b>Q16 · Full category performance dashboard (CTE + RANK)</b></summary>
+<summary><b>Q6 — Category Performance Summary</b></summary>
+
+### Query
 
 ```sql
 WITH category_summary AS (
-    SELECT category,
-        COUNT(DISTINCT name)                                       AS unique_products,
-        ROUND(AVG(discountPercent), 2)                            AS avg_discount_pct,
-        ROUND(AVG(mrp), 2)                                        AS avg_mrp,
-        ROUND(SUM(discountedSellingPrice * availableQuantity), 2) AS total_revenue,
-        SUM(CASE WHEN outOfStock = 'TRUE'  THEN 1 ELSE 0 END)    AS out_of_stock_count,
-        SUM(CASE WHEN outOfStock = 'FALSE' THEN 1 ELSE 0 END)    AS in_stock_count
-    FROM zepto_clean GROUP BY category
+    SELECT
+        category,
+        COUNT(DISTINCT name) AS unique_products,
+        ROUND(AVG(discountPercent), 2) AS avg_discount_pct,
+        ROUND(AVG(mrp), 2) AS avg_mrp,
+        ROUND(
+            SUM(discountedSellingPrice * availableQuantity),
+            2
+        ) AS total_revenue,
+        SUM(
+            CASE
+                WHEN outOfStock = 'TRUE' THEN 1
+                ELSE 0
+            END
+        ) AS out_of_stock_count,
+        SUM(
+            CASE
+                WHEN outOfStock = 'FALSE' THEN 1
+                ELSE 0
+            END
+        ) AS in_stock_count
+    FROM zepto_clean
+    GROUP BY category
 )
-SELECT *, RANK() OVER (ORDER BY total_revenue DESC) AS revenue_rank
-FROM category_summary ORDER BY revenue_rank;
+SELECT
+    *,
+    RANK() OVER (
+        ORDER BY total_revenue DESC
+    ) AS revenue_rank
+FROM category_summary
+ORDER BY revenue_rank;
 ```
-**Finding:** One query delivers the full management view — revenue rank, stockout count, avg MRP, and discount % per category.
-</details>
 
-> 📂 All 16 queries (Q1–Q16) including window functions `RANK`, `DENSE_RANK`, `ROW_NUMBER`, cumulative revenue, correlated subqueries, CTEs, and `CASE WHEN` are in `zepto_analysis.sql` Section 3.
+### SQL Concepts Used
+
+* CTE
+* Aggregation
+* `CASE WHEN`
+* `RANK()`
+* Multiple business metrics
+
+</details>
 
 ---
 
-### 📌 Section 4 — Multi-Table Analysis / JOINs (Q17–Q20)
+# 🔗 Multi-Table JOIN Analysis
 
-Uses `category_info` to link inventory data with warehouse zone, category manager, and reorder threshold.
+A reference table named `category_info` was used to demonstrate multi-table analysis.
+
+It contains category-level fields such as:
+
+* Category
+* Category manager
+* Warehouse zone
+* Reorder threshold
+
+This table supports additional JOIN-based analysis.
+
+![SQL JOIN Output](screenshots/sql_join_query_output.png)
+
+---
 
 <details>
-<summary><b>Q17 · INNER JOIN — Revenue per category with manager & zone</b></summary>
+<summary><b>Q7 — Category Revenue with Reference Data</b></summary>
 
 ```sql
-SELECT ci.category, ci.category_manager, ci.warehouse_zone,
-       ROUND(SUM(z.discountedSellingPrice * z.availableQuantity), 2) AS total_revenue
+SELECT
+    ci.category,
+    ci.category_manager,
+    ci.warehouse_zone,
+    ROUND(
+        SUM(
+            z.discountedSellingPrice *
+            z.availableQuantity
+        ),
+        2
+    ) AS total_revenue
 FROM zepto_clean z
-INNER JOIN category_info ci ON z.category = ci.category
-GROUP BY ci.category, ci.category_manager, ci.warehouse_zone
+INNER JOIN category_info ci
+    ON z.category = ci.category
+GROUP BY
+    ci.category,
+    ci.category_manager,
+    ci.warehouse_zone
 ORDER BY total_revenue DESC;
 ```
-**Finding:** Maps revenue accountability directly to category managers and zones — real operations reporting logic.
+
+### Concepts Used
+
+* `INNER JOIN`
+* Aggregation
+* Multiple-table analysis
+
 </details>
 
+---
+
 <details>
-<summary><b>Q18 · LEFT JOIN — Detect categories missing from master table</b></summary>
+<summary><b>Q8 — Identifying Categories Without Matching Reference Data</b></summary>
 
 ```sql
-SELECT z.category, ci.category_manager, ci.warehouse_zone,
-       COUNT(z.sku_id) AS total_skus,
-       ROUND(AVG(z.discountPercent), 2) AS avg_discount
+SELECT
+    z.category,
+    ci.category_manager,
+    ci.warehouse_zone,
+    COUNT(z.sku_id) AS total_skus,
+    ROUND(
+        AVG(z.discountPercent),
+        2
+    ) AS avg_discount
 FROM zepto_clean z
-LEFT JOIN category_info ci ON z.category = ci.category
-GROUP BY z.category, ci.category_manager, ci.warehouse_zone
+LEFT JOIN category_info ci
+    ON z.category = ci.category
+GROUP BY
+    z.category,
+    ci.category_manager,
+    ci.warehouse_zone
 ORDER BY total_skus DESC;
 ```
-**Finding:** NULL values in manager/zone columns expose data gaps in the reference table — a data completeness check.
+
+### Purpose
+
+A `LEFT JOIN` keeps all categories from the inventory dataset and helps identify categories without matching reference information.
+
 </details>
 
+---
+
 <details>
-<summary><b>Q19 · JOIN + CASE WHEN — Automated restock alert</b></summary>
+<summary><b>Q9 — Stock Status Using CASE WHEN</b></summary>
 
 ```sql
-SELECT ci.category, ci.category_manager, ci.warehouse_zone,
-       ci.reorder_threshold, SUM(z.availableQuantity) AS current_inventory,
-       CASE
-           WHEN SUM(z.availableQuantity) < ci.reorder_threshold       THEN 'RESTOCK NOW'
-           WHEN SUM(z.availableQuantity) < ci.reorder_threshold * 1.5 THEN 'LOW STOCK'
-           ELSE 'SUFFICIENT'
-       END AS stock_status
+SELECT
+    ci.category,
+    ci.category_manager,
+    ci.warehouse_zone,
+    ci.reorder_threshold,
+    SUM(z.availableQuantity) AS current_inventory,
+    CASE
+        WHEN SUM(z.availableQuantity)
+             < ci.reorder_threshold
+            THEN 'RESTOCK NOW'
+
+        WHEN SUM(z.availableQuantity)
+             < ci.reorder_threshold * 1.5
+            THEN 'LOW STOCK'
+
+        ELSE 'SUFFICIENT'
+    END AS stock_status
 FROM zepto_clean z
-INNER JOIN category_info ci ON z.category = ci.category
-GROUP BY ci.category, ci.category_manager, ci.warehouse_zone, ci.reorder_threshold
+INNER JOIN category_info ci
+    ON z.category = ci.category
+GROUP BY
+    ci.category,
+    ci.category_manager,
+    ci.warehouse_zone,
+    ci.reorder_threshold
 ORDER BY current_inventory ASC;
 ```
-**Finding:** Outputs an actionable RESTOCK NOW / LOW STOCK / SUFFICIENT status per category — operations-ready logic.
+
+### SQL Concepts Used
+
+* `INNER JOIN`
+* `SUM()`
+* `CASE WHEN`
+* Business-rule logic
+* Inventory threshold analysis
+
 </details>
 
+---
+
 <details>
-<summary><b>Q20 · JOIN + CTE + Window Function — Top revenue category per warehouse zone</b></summary>
+<summary><b>Q10 — Revenue Ranking Within Warehouse Zones</b></summary>
 
 ```sql
 WITH zone_revenue AS (
-    SELECT ci.warehouse_zone, ci.category, ci.category_manager,
-           ROUND(SUM(z.discountedSellingPrice * z.availableQuantity), 2) AS revenue
+    SELECT
+        ci.warehouse_zone,
+        ci.category,
+        ci.category_manager,
+        ROUND(
+            SUM(
+                z.discountedSellingPrice *
+                z.availableQuantity
+            ),
+            2
+        ) AS revenue
     FROM zepto_clean z
-    INNER JOIN category_info ci ON z.category = ci.category
-    GROUP BY ci.warehouse_zone, ci.category, ci.category_manager
+    INNER JOIN category_info ci
+        ON z.category = ci.category
+    GROUP BY
+        ci.warehouse_zone,
+        ci.category,
+        ci.category_manager
 )
-SELECT warehouse_zone, category, category_manager, revenue,
-       RANK() OVER (PARTITION BY warehouse_zone ORDER BY revenue DESC) AS rank_within_zone
+SELECT
+    warehouse_zone,
+    category,
+    category_manager,
+    revenue,
+    RANK() OVER (
+        PARTITION BY warehouse_zone
+        ORDER BY revenue DESC
+    ) AS rank_within_zone
 FROM zone_revenue
-ORDER BY warehouse_zone, rank_within_zone;
+ORDER BY
+    warehouse_zone,
+    rank_within_zone;
 ```
-**Finding:** Zone managers can instantly see which category drives the most revenue in their zone — combines JOIN, CTE, and window function in one query.
+
+### SQL Concepts Used
+
+* CTE
+* JOIN
+* Aggregation
+* Window function
+* `PARTITION BY`
+* Ranking within groups
+
 </details>
 
-![JOIN Query Output](sql_join_query_output.png)
+---
+
+# 💡 Key Insights
+
+### 1. Data quality changed the analytical dataset
+
+The dataset reduced from:
+
+**3,732 → 3,731 → 1,675 records**
+
+after invalid-value removal and deduplication.
+
+This demonstrated that cleaning decisions can materially affect downstream business analysis.
 
 ---
 
-## 🔑 Key Insights
+### 2. Duplicate-category records required investigation
 
-> 🏆 **Cooking Essentials** is Zepto's revenue powerhouse — estimated **₹2,83,472**, nearly 27x the revenue of Fruits & Vegetables.
+The presence of **1,187 products across multiple category tags** created suspicious category-level results during the initial analysis.
 
-> 🥦 **Perishables get discounted hardest.** Fruits & Vegetables (15.93% avg discount) and Meats, Fish & Eggs (9.91%) top the discount charts — a classic "sell before it spoils" strategy.
-
-> 📉 **Stockouts hitting high-value staples.** Ghee, atta, and chilli powder — daily essentials at ₹300+ MRP — found out of stock. These are the SKUs that should never run dry.
-
-> 🔍 **Caught and fixed a critical data quality bug.** Identical revenue totals across unrelated categories led to discovering 1,187 products duplicated across multiple category tags — 2,057 excess rows. After deduplication, dataset dropped from 3,731 → 1,675 rows and all figures were recalculated.
-
-> 🗂 **JOINs unlocked operational insights.** Building `category_info` and writing JOIN queries revealed warehouse zone revenue distribution, category manager stockout accountability, and automated restock alerts — context that single-table queries simply can't provide.
+Rather than accepting those results, the duplication pattern was investigated before continuing.
 
 ---
 
-## 🧩 Challenges Faced
+### 3. The cleaned dataset passed core structural checks
 
-**Boolean import error:** MySQL rejected `outOfStock` as a true boolean during CSV import. Fixed by importing as `VARCHAR(6)` and filtering with string comparison (`= 'TRUE'`).
+Python validation found:
 
-**Hidden duplicate bug:** Early revenue queries returned identical totals for unrelated categories. Traced the issue to 1,187 products carrying multiple category labels — required writing diagnostic queries before trusting any business conclusion.
-
-**Deduplication logic correction:** Initial `ROW_NUMBER()` partitioned by `name` only, which was incorrect. Corrected to `PARTITION BY name, category` to properly handle products legitimately appearing across different categories.
+* **0 missing values**
+* **0 duplicate rows**
+* **0 duplicate SKU IDs**
+* **0 invalid MRP values**
+* **0 invalid discount ranges**
+* **0 negative inventory quantities**
+* **0 invalid selling prices**
+* **0 negative weights**
 
 ---
 
-## ▶️ How to Run This Project
+### 4. Pricing logic requires business-rule confirmation
 
-**Step 1 — Clone the repo**
+The pricing validation showed that:
+
+* **1,266 records** reconciled under a rounded discount calculation.
+* **409 records** still require confirmation of the source pricing rule.
+
+This demonstrates why a mathematical mismatch should not automatically be classified as a business error without understanding the underlying pricing logic.
+
+---
+
+### 5. SQL can turn cleaned inventory data into business analysis
+
+The project demonstrates SQL techniques including:
+
+```text
+GROUP BY
+HAVING
+CASE WHEN
+CTEs
+INNER JOIN
+LEFT JOIN
+DENSE_RANK
+RANK
+PARTITION BY
+```
+
+These were applied to questions around discounts, revenue, stock availability, category performance, and warehouse-zone analysis.
+
+---
+
+# ⚠️ Challenges
+
+### Challenge 1 — Duplicate Data
+
+The initial dataset contained repeated product/category records that could distort category-level analysis.
+
+**Approach:**
+Investigate the duplication pattern first, then deduplicate before generating final insights.
+
+---
+
+### Challenge 2 — Pricing Mismatch
+
+The stored selling price did not always match the simplest discount formula.
+
+**Approach:**
+Test multiple deterministic pricing rules in Python instead of assuming every mismatch was an error.
+
+---
+
+### Challenge 3 — Separating Validation from Interpretation
+
+AI-generated explanations can be useful but should not replace deterministic data validation.
+
+**Approach:**
+
+```text
+Python → validates
+SQL → analyzes
+Gemini → interprets
+Human/business rule → confirms
+```
+
+---
+
+# ▶️ How to Run
+
+## 1. Clone the repository
+
 ```bash
-git clone https://github.com/SunainaSingh56/zepto-inventory-analysis.git
+git clone https://github.com/SunainaSingh56/Zepto-Inventory-Analysis.git
 ```
 
-**Step 2 — Create the database (MySQL client)**
-```sql
-CREATE DATABASE zepto_project;
-USE zepto_project;
+## 2. Set up MySQL
+
+Open:
+
+```text
+sql/zepto_db_setup.sql
 ```
 
-**Step 3 — Run setup file** *(run once — creates tables, load CSV, inserts reference data)*
-```sql
-SOURCE zepto_db_setup.sql;
-```
-
-**Step 4 — Import CSV into `zepto` table**, then run analysis:
-```sql
-SOURCE zepto_analysis.sql;
-```
-
-> Requires MySQL 8.0+ · VS Code with SQLTools, MySQL Workbench, or any MySQL client
+Run the setup script in MySQL 8.0.
 
 ---
 
-## 🚀 What's Next
+## 3. Run SQL Analysis
 
-- [ ] Power BI dashboard built on top of `zepto_clean` findings
-- [ ] Expand `category_info` with real margin and shelf-life data for deeper JOIN analysis
-- [ ] Wrap cleaning + deduplication into a reusable stored procedure
+Open:
+
+```text
+sql/zepto_analysis.sql
+```
+
+Execute the queries in MySQL Workbench or another MySQL-compatible environment.
 
 ---
 
-## 🤝 Let's Connect
+## 4. Run Python Validation
 
-📌 **GitHub:** [SunainaSingh56](https://github.com/SunainaSingh56)
-📌 **LinkedIn:** [Sunaina Singh](https://www.linkedin.com/in/sunainasingh56)
+Open:
 
-*Found this useful? A ⭐ on the repo goes a long way!*
+```text
+python/zepto_data_quality.ipynb
+```
+
+Install the required packages if needed:
+
+```bash
+pip install pandas jupyter
+```
+
+Then run the notebook.
+
+---
+
+## 5. Gemini API
+
+If reproducing the AI-assisted analysis, configure the API key as an environment variable:
+
+```text
+GEMINI_API_KEY
+```
+
+> Never commit API keys or credentials to GitHub.
+
+---
+
+# 🚀 What I Would Do Next
+
+If more operational data were available, the project could be extended with:
+
+* Historical inventory trends
+* Daily stock movement
+* Sales velocity
+* Reorder-point optimization
+* Stockout rate by category
+* Discount vs. sales analysis
+* Price-change monitoring
+* Automated data-quality checks
+* Power BI dashboard for business users
+
+---
+
+# 📂 Project Files
+
+| File                              | Purpose                            |
+| --------------------------------- | ---------------------------------- |
+| `data/zepto_clean.csv`            | Final cleaned dataset              |
+| `python/zepto_data_quality.ipynb` | Data-quality validation            |
+| `sql/zepto_db_setup.sql`          | Database/table setup               |
+| `sql/zepto_analysis.sql`          | SQL business analysis              |
+| `docs/ai_quality_assessment.md`   | Gemini-assisted quality assessment |
+| `screenshots/`                    | SQL output screenshots             |
+
+---
+
+## 📌 Key Takeaway
+
+This project was not only about writing SQL queries.
+
+It demonstrates an end-to-end analytical approach:
+
+> **Clean the data → Validate it → Understand its limitations → Analyze it → Translate the results into business insights.**
+
+The most important lesson from the project was that **data quality should be validated before trusting the business conclusions produced from the data.**
+
+---
+
+## 🔗 Project
+
+**GitHub:**
+https://github.com/SunainaSingh56/Zepto-Inventory-Analysis
