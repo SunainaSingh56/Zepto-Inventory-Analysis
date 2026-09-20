@@ -386,7 +386,7 @@ ORDER BY mrp DESC;
 
 Identify higher-priced products that are currently marked as out of stock.
 
-![High MRP Out of Stock](screenshots/sql_outofstock_highmrp.png)
+![High MRP Out of Stock](sql_outofstock_highmrp.png)
 
 </details>
 
@@ -419,7 +419,7 @@ Estimate the inventory value represented by each category using:
 Discounted Selling Price × Available Quantity
 ```
 
-![Revenue by Category](screenshots/sql_revenue_by_category.png)
+![Revenue by Category](sql_revenue_by_category.png)
 
 </details>
 
@@ -444,7 +444,7 @@ LIMIT 5;
 
 **Fruits & Vegetables** recorded an average discount of approximately **15.93%** in the analyzed dataset.
 
-![Average Discount by Category](screenshots/sql_avg_discount_category.png)
+![Average Discount by Category](sql_avg_discount_category.png)
 
 </details>
 
@@ -555,7 +555,7 @@ It contains category-level fields such as:
 
 This table supports additional JOIN-based analysis.
 
-![SQL JOIN Output](screenshots/sql_join_query_output.png)
+![SQL JOIN Output](sql_join_query_output.png)
 
 ---
 
