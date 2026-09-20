@@ -216,7 +216,7 @@ After investigating the duplicate records, the dataset was deduplicated before p
 1,675 records
 ```
 
-![Deduplication Result](screenshots/sql_dedup_result.png)
+![Deduplication Result](sql_dedup_result.png)
 
 > **Key takeaway:** Data validation changed the dataset before business insights were generated. This helped prevent potentially misleading conclusions from duplicated records.
 
