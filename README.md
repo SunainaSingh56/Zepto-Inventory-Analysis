@@ -104,9 +104,9 @@ The cleaned dataset contained **1,675 records**.
 
 The complete cleaning queries are available in:
 
-```text
-sql/zepto_analysis.sql
 ```
+```
+![Deduplication Result](sql_dedup_result.png)
 
 ---
 
@@ -219,6 +219,8 @@ ORDER BY mrp DESC;
 **Business use:** Helps identify higher-value products that may require inventory attention.
 
 ---
+![Out of Stock High MRP](sql_outofstock_highmrp.png)
+
 
 ## 2. Estimated Inventory Value
 
@@ -318,6 +320,7 @@ GROUP BY
 ```
 
 This demonstrates how cleaned inventory data can be connected with operational reference data to support potential reorder analysis.
+![JOIN Query Output](sql_join_query_output.png)
 
 ---
 
