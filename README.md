@@ -136,6 +136,8 @@ notebooks/zepto_data_quality.ipynb
 ```
 
 ---
+![Python Data Quality Validation](Python_Data_Quality_Validation.png)
+
 
 ## 💰 Pricing Consistency Investigation
 
@@ -144,6 +146,8 @@ The discounted selling price was investigated using:
 ```text
 Expected Price = MRP × (1 - Discount% / 100)
 ```
+![Pricing Consistency Investigation](Pricing_Consistency_Investigation.png)
+
 
 ### Validation Results
 
